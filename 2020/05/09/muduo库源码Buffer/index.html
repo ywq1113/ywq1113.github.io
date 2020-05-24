@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yangwqblog.cn","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="Buffer的功能需求设计buffer可以从易用性和性能两方面考虑，muduo的buffer更偏向于易用性。  对外表现是一块连续的内存(char* p, int len) 其size()可以自动增长，不是固定大小的数组 内部以std::vector&lt;int&gt;来保存数据 buffer更像一个queue，从尾部写入数据，从头部读取数据 input buffer：连接从socket中读取数">
+<meta property="og:type" content="article">
+<meta property="og:title" content="muduo库源码Buffer">
+<meta property="og:url" content="http://yangwqblog.cn/2020/05/09/muduo%E5%BA%93%E6%BA%90%E7%A0%81Buffer/index.html">
+<meta property="og:site_name" content="My Personal Blog">
+<meta property="og:description" content="Buffer的功能需求设计buffer可以从易用性和性能两方面考虑，muduo的buffer更偏向于易用性。  对外表现是一块连续的内存(char* p, int len) 其size()可以自动增长，不是固定大小的数组 内部以std::vector&lt;int&gt;来保存数据 buffer更像一个queue，从尾部写入数据，从头部读取数据 input buffer：连接从socket中读取数">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://img-blog.csdnimg.cn/20200501173424887.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3hpYW9waWppYW5nMjMz,size_16,color_FFFFFF,t_70">
+<meta property="article:published_time" content="2020-05-09T07:12:25.000Z">
+<meta property="article:modified_time" content="2020-05-11T07:06:29.174Z">
+<meta property="article:author" content="yangwq">
+<meta property="article:tag" content="C++">
+<meta property="article:tag" content="muduo">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://img-blog.csdnimg.cn/20200501173424887.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3hpYW9waWppYW5nMjMz,size_16,color_FFFFFF,t_70">
+
+<link rel="canonical" href="http://yangwqblog.cn/2020/05/09/muduo%E5%BA%93%E6%BA%90%E7%A0%81Buffer/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-cn'
+  };
+</script>
+
+  <title>muduo库源码Buffer | My Personal Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">My Personal Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-cn">
+    <link itemprop="mainEntityOfPage" href="http://yangwqblog.cn/2020/05/09/muduo%E5%BA%93%E6%BA%90%E7%A0%81Buffer/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="yangwq">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="My Personal Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          muduo库源码Buffer
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-05-09 15:12:25" itemprop="dateCreated datePublished" datetime="2020-05-09T15:12:25+08:00">2020-05-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-05-11 15:06:29" itemprop="dateModified" datetime="2020-05-11T15:06:29+08:00">2020-05-11</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="Buffer的功能需求"><a href="#Buffer的功能需求" class="headerlink" title="Buffer的功能需求"></a>Buffer的功能需求</h1><p>设计buffer可以从易用性和性能两方面考虑，muduo的buffer更偏向于易用性。</p>
+<ul>
+<li>对外表现是一块连续的内存<code>(char* p, int len)</code></li>
+<li>其<code>size()</code>可以自动增长，不是固定大小的数组</li>
+<li>内部以<code>std::vector&lt;int&gt;</code>来保存数据</li>
+<li>buffer更像一个queue，从尾部写入数据，从头部读取数据</li>
+<li><code>input buffer</code>：连接从socket中读取数据，写入<code>input buffer</code>；客户代码从中读取数据</li>
+<li><code>output buffer</code>：客户代码把数据写入<code>output buffer</code>，连接从<code>output buffer</code>中读数据并写入socket</li>
+</ul>
+<h1 id="muduo-base基础库"><a href="#muduo-base基础库" class="headerlink" title="muduo/base基础库"></a>muduo/base基础库</h1><p>在学习muduo如何实现Buffer之前，先阅读<code>Buffer.h</code>头文件中所需要的依赖。</p>
+<h2 id="types-h"><a href="#types-h" class="headerlink" title="types.h"></a>types.h</h2><p>基本类型的声明，如<code>muduo::string</code>；<br>具体有：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">memZero</span><span class="params">(<span class="keyword">void</span>* p, <span class="keyword">size_t</span> n)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//作为static_cast&lt;&gt;或const_cast&lt;&gt;的安全版本</span></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> To, <span class="keyword">typename</span> From&gt;</span><br><span class="line"><span class="function"><span class="keyword">inline</span> To <span class="title">implicit_cast</span><span class="params">(From <span class="keyword">const</span> &amp;f)</span></span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function"><span class="comment">//当upcast使用implicit_cast&lt;&gt;，downcast时static_cast&lt;&gt;不再安全，这里使用</span></span></span><br><span class="line"><span class="function"><span class="comment">//dynamic_cast&lt;&gt;来检查downcast是否合法</span></span></span><br><span class="line"><span class="function"><span class="comment">//不支持RTTI，如</span></span></span><br><span class="line"><span class="function"><span class="comment">//if(dynamic_cast&lt;subclass&gt;(foo)) HandleSubclassObj(foo);</span></span></span><br><span class="line">template&lt;typename To, typename From&gt;</span><br><span class="line"><span class="function"><span class="keyword">inline</span> To <span class="title">down_cast</span><span class="params">(From* f)</span></span></span><br></pre></td></tr></table></figure>
+<h2 id="StringPiece-h"><a href="#StringPiece-h" class="headerlink" title="StringPiece.h"></a>StringPiece.h</h2><p> 传递C风格的字符串参数给函数，知乎有个相关的提问与回答<a href="https://www.zhihu.com/question/34499426" target="_blank" rel="noopener">点击查看</a>，<code>StringPiece</code>是某公司使用的一个类。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">StringArg</span> &#123;</span></span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">  StringArg(<span class="keyword">const</span> <span class="keyword">char</span>* str) </span><br><span class="line">  	: str_(str)</span><br><span class="line">  &#123; &#125;</span><br><span class="line">  </span><br><span class="line">  StringArg(<span class="keyword">const</span> <span class="built_in">string</span>&amp; str) </span><br><span class="line">  	: str_(str.c_str())</span><br><span class="line">  &#123; &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">const</span> <span class="keyword">char</span>* <span class="title">c_str</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123; <span class="keyword">return</span> str_; &#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">char</span>* str_;</span><br></pre></td></tr></table></figure>
+<p>提供non-explicit构造函数给使用者，可以传递<code>const char*</code>或<code>string</code></p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> MUDUO_BASE_STRINGPIECE_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MUDUO_BASE_STRINGPIECE_H</span></span><br><span class="line"><span class="keyword">namespace</span> muduo &#123;</span><br><span class="line">&#123;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">StringPiece</span> &#123;</span></span><br><span class="line"> <span class="keyword">private</span>:</span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">char</span>*   ptr_;</span><br><span class="line">  <span class="keyword">int</span>           length_;</span><br><span class="line"></span><br><span class="line"> <span class="keyword">public</span>:</span><br><span class="line">  <span class="comment">//default</span></span><br><span class="line">  StringPiece()</span><br><span class="line">  	: ptr_(<span class="literal">NULL</span>), length_(<span class="number">0</span>) &#123; &#125;</span><br><span class="line">  <span class="comment">//参数为字符指针</span></span><br><span class="line">  StringPiece(<span class="keyword">const</span> <span class="keyword">char</span>* str)</span><br><span class="line">    : ptr_(str), length_(<span class="keyword">static_cast</span>&lt;<span class="keyword">int</span>&gt;(<span class="built_in">strlen</span>(ptr_))) &#123; &#125;</span><br><span class="line">  <span class="comment">//参数为无符号字符指针; reinterpret_cast临时隐藏类型，使用时要将其转换为原型</span></span><br><span class="line">  <span class="comment">//具有非常强的转换能力</span></span><br><span class="line">  StringPiece(<span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">char</span>* str)</span><br><span class="line">    : ptr_(<span class="keyword">reinterpret_cast</span>&lt;<span class="keyword">const</span> <span class="keyword">char</span>*&gt;(str)),</span><br><span class="line">      length_(<span class="keyword">static_cast</span>&lt;<span class="keyword">int</span>&gt;(<span class="built_in">strlen</span>(ptr_))) &#123; &#125;</span><br><span class="line"></span><br><span class="line">  StringPiece(<span class="keyword">const</span> <span class="built_in">string</span>&amp; str)</span><br><span class="line">    : ptr_(str.data()), length_(<span class="keyword">static_cast</span>&lt;<span class="keyword">int</span>&gt;(str.size())) &#123; &#125;</span><br><span class="line">    </span><br><span class="line">  StringPiece(<span class="keyword">const</span> <span class="keyword">char</span>* offset, <span class="keyword">int</span> len)</span><br><span class="line">    : ptr_(offset), length_(len) &#123; &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//string类常见成员</span></span><br><span class="line">  <span class="function"><span class="keyword">const</span> <span class="keyword">char</span>* <span class="title">data</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123; <span class="keyword">return</span> ptr_; &#125;</span><br><span class="line">  <span class="function"><span class="keyword">int</span> <span class="title">size</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123; <span class="keyword">return</span> length_; &#125;</span><br><span class="line">  <span class="function"><span class="keyword">bool</span> <span class="title">empty</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123; <span class="keyword">return</span> length_ == <span class="number">0</span>; &#125;</span><br><span class="line">  <span class="function"><span class="keyword">const</span> <span class="keyword">char</span>* <span class="title">begin</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123; <span class="keyword">return</span> ptr_; &#125;</span><br><span class="line">  <span class="function"><span class="keyword">const</span> <span class="keyword">char</span>* <span class="title">end</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123; <span class="keyword">return</span> ptr_ + length_; &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">clear</span><span class="params">()</span> </span>&#123; ptr_ = <span class="literal">NULL</span>; length_ = <span class="number">0</span>; &#125;</span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">set</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span>* buffer, <span class="keyword">int</span> len)</span> </span>&#123; ptr_ = buffer; length = len; &#125;</span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">set</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span>* str)</span> </span>&#123; </span><br><span class="line">  	ptr = str;</span><br><span class="line">  	length_ = <span class="keyword">static_cast</span>&lt;<span class="keyword">int</span>&gt;(<span class="built_in">strlen</span>(str)); </span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">//运算符成员函数[], ==,</span></span><br><span class="line">  <span class="keyword">char</span> <span class="keyword">operator</span>[](<span class="keyword">int</span> i) <span class="keyword">const</span> &#123; <span class="keyword">return</span> _ptr[i]; &#125;</span><br><span class="line">  <span class="keyword">bool</span> <span class="keyword">operator</span>==(<span class="keyword">const</span> StringPiece&amp; x) <span class="keyword">const</span> &#123;</span><br><span class="line">  	<span class="keyword">return</span> (x.length_ == length_) &amp;&amp;</span><br><span class="line">  		   (<span class="built_in">memcmp</span>(x.ptr_, ptr_, length_) == <span class="number">0</span>);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">bool</span> <span class="keyword">operator</span>!=(<span class="keyword">const</span> StringPiece&amp; x) <span class="keyword">const</span> &#123;</span><br><span class="line">  	<span class="keyword">return</span> !(*<span class="keyword">this</span> == x);</span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">//比较成员函数</span></span><br><span class="line">  <span class="function"><span class="keyword">int</span> <span class="title">compare</span><span class="params">(<span class="keyword">const</span> StringPiece&amp; x)</span> <span class="keyword">const</span> </span>&#123; ... &#125;</span><br><span class="line">  <span class="comment">//转换成string类型</span></span><br><span class="line">  <span class="function"><span class="built_in">string</span> <span class="title">as_string</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123;...&#125;</span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">CopyToString</span><span class="params">(<span class="built_in">string</span>* target)</span> </span>&#123; ... &#125;</span><br><span class="line">  <span class="comment">//判断起始字符</span></span><br><span class="line">  <span class="function"><span class="keyword">bool</span> <span class="title">start_with</span><span class="params">(<span class="keyword">const</span> StringPiece&amp; x)</span> <span class="keyword">const</span> </span>&#123; ... &#125;</span><br><span class="line">&#125;;</span><br><span class="line">&#125; <span class="comment">// namespace muduo</span></span><br><span class="line">  <span class="comment">//允许String Pieces被记录到日志中</span></span><br><span class="line">  <span class="built_in">std</span>::ostream&amp; <span class="keyword">operator</span>&lt;&lt;(<span class="built_in">std</span>::ostream o&amp;, <span class="keyword">const</span> muduo::StringPieces piece);</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+
+<h1 id="muduo-net网络库"><a href="#muduo-net网络库" class="headerlink" title="muduo/net网络库"></a>muduo/net网络库</h1><h2 id="Buffer-cc和Buffer-h"><a href="#Buffer-cc和Buffer-h" class="headerlink" title="Buffer.cc和Buffer.h"></a>Buffer.cc和Buffer.h</h2><p><img src="https://img-blog.csdnimg.cn/20200501173424887.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3hpYW9waWppYW5nMjMz,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"><br>1）<strong>特点</strong>：封装vector作为缓冲区，因为vector为一块连续空间，且其本身具有自动增长的性质，迭代器为原始指针，使用起来较为方便<br>2）<strong>分布</strong>：缓冲区分为三个部分<br>prependable：大小为<code>readerIndex</code><br>readable：大小为<code>writerIndex - readerIndex</code><br>writeable：大小为<code>size() - writerIndex</code><br>初始时，readable == 0，readIndex = writeIndex = 8；<br>3）<strong>检索</strong>：Buffer类通过<code>findCRLF</code>和<code>findEOL</code>成员函数在<code>readerable</code>区域检索<code>\r\n</code>和<code>EOL</code><br>4）<strong>调整区域</strong>：</p>
+<ul>
+<li>通过成员函数<code>hasWritten</code>和<code>unwrite</code>调整可读/可写区域的大小，如果向Buffer写入200字节，那么<code>writeIndex += 200</code>，<code>readable == 200</code>，<code>writable == 824</code>；</li>
+<li>成员函数<code>read()</code>和<code>retrieve()</code>读入50字节，<code>readIndex += 50</code>，<code>readable == 150</code>，<code>writable == 824</code>；当一次性读完时，调用<code>retrieveall()</code>将<code>Buffer</code>重置</li>
+</ul>
+<p>5）<strong>自动增长</strong>：如果客户代码一次性写入1000字节，而当前可写字节小于这个数（prependable+writable），那么buffer就会自动增长以容纳全部数据。<br>6）<strong>内部挪腾</strong>：当可写字节满足需求，但是writable大小不足时，移动readable，腾出位置<br>7）<strong>前方添加</strong>：提供prependable，让程序能以很小的代价在数据前面添加几个字节。比如说要序列化一个消息，但是并不知道消息长度，于是不断append()直到序列化完成，此时可以通过readable区域变化求出消息长度，在prependable中用4个字节存储。<br>8）<strong>读取内容</strong>：利用<code>readfd()</code>，在栈上开辟一块65536字节额外缓冲区，利用readv()来读。注意在muduo中只调用了一次readv来读取数据是因为它采用的是level trigger，而不是edge trigger。如果采用边缘触发，就需要使用一个while循环来不断读取，直到把缓冲区的内容读取完。边缘触发相比水平触发会进行更多次的系统调用，对追求低延迟的程序而言不一定更高效。边缘触发更适合高并发，比如系统中存在很多不需要读写的就绪文件描述符，水平触发每次都会返回不断通知，边缘触发只通知一次，直到有第二次的读写事件发生。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Buffer</span> :</span> <span class="keyword">public</span> muduo::copyable </span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">  <span class="comment">//1) 用一个vector来维护一个缓冲区</span></span><br><span class="line">  <span class="built_in">std</span>::<span class="built_in">vector</span>&lt;<span class="keyword">char</span>&gt; buffer_;</span><br><span class="line">  <span class="keyword">size_t</span> readerIndex_;</span><br><span class="line">  <span class="keyword">size_t</span> writerIndex_;</span><br><span class="line">  <span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">char</span> kCRLF[];</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">  <span class="function"><span class="keyword">char</span>* <span class="title">begin</span><span class="params">()</span> </span>&#123; <span class="keyword">return</span> &amp;*buffer_.begin(); &#125;  <span class="comment">//使用vector自身的迭代器,begin()返回缓冲区起始元素</span></span><br><span class="line">  <span class="function"><span class="keyword">char</span>* <span class="title">beginWrite</span><span class="params">()</span> </span>&#123; <span class="keyword">return</span> begin() + writeIndex_; &#125;  <span class="comment">//获得writeable区的起始元素</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">  <span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">size_t</span> kCheapPrepend = <span class="number">8</span>;  <span class="comment">//定义prepenable初始大小为8</span></span><br><span class="line">  <span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">size_t</span> kInitialSize = <span class="number">1024</span>;  <span class="comment">//定义writeable初始大小为1024</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">//2) 求缓冲区三个部分的大小</span></span><br><span class="line">  <span class="function"><span class="keyword">size_t</span> <span class="title">readableBytes</span><span class="params">()</span> <span class="keyword">const</span></span></span><br><span class="line"><span class="function">  </span>&#123; <span class="keyword">return</span> writerIndex_ - readerIndex_; &#125;</span><br><span class="line">  <span class="function"><span class="keyword">size_t</span> <span class="title">writableBytes</span><span class="params">()</span> <span class="keyword">const</span></span></span><br><span class="line"><span class="function">  </span>&#123; <span class="keyword">return</span> buffer_.size() - writerIndex_; &#125;</span><br><span class="line">  <span class="function"><span class="keyword">size_t</span> <span class="title">prependableBytes</span><span class="params">()</span> <span class="keyword">const</span></span></span><br><span class="line"><span class="function">  </span>&#123; <span class="keyword">return</span> readerIndex_; &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">const</span> <span class="keyword">char</span>* <span class="title">peek</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123; <span class="keyword">return</span> begin() + readerIndex_; &#125;  <span class="comment">//求readerable的头部指针</span></span><br><span class="line">  </span><br><span class="line">  <span class="comment">//3) 检索"/r/n"和EOL</span></span><br><span class="line">  <span class="function"><span class="keyword">const</span> <span class="keyword">char</span>* <span class="title">findCRLF</span><span class="params">()</span> <span class="keyword">const</span> </span></span><br><span class="line"><span class="function">  </span>&#123; </span><br><span class="line">  	<span class="keyword">const</span> <span class="keyword">char</span>* crlf = <span class="built_in">std</span>::search(peek(), beginWrite(), kCRLF, kCRLF+<span class="number">2</span>)  <span class="comment">//检索范围是readable区域，搜索的元素范围是[kCRLF,kCRLF+2]</span></span><br><span class="line">  	<span class="keyword">return</span> crlf == beginWrite() ? <span class="literal">NULL</span> : crlf;  <span class="comment">//若search返回尾部迭代器则没有找到</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">//重载findCRLF，可以自定义检索起始位置</span></span><br><span class="line">  <span class="function"><span class="keyword">const</span> <span class="keyword">char</span>* <span class="title">findCRLF</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span>* start)</span> <span class="keyword">const</span> </span></span><br><span class="line"><span class="function">  </span>&#123;</span><br><span class="line">  	assert(peek() &lt;= start);</span><br><span class="line">  	assert(start &lt;= beginWrite());</span><br><span class="line">    ...</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="function"><span class="keyword">const</span> <span class="keyword">char</span>* <span class="title">findEOL</span><span class="params">()</span> <span class="keyword">const</span> </span>&#123; ... &#125;  <span class="comment">//在readerable中搜索换行符</span></span><br><span class="line">  <span class="function"><span class="keyword">const</span> <span class="keyword">char</span>* <span class="title">findEOL</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span>* start)</span> <span class="keyword">const</span> </span>&#123; ... &#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">  <span class="comment">//4) 写入和未写入移动writerIndex来调整可读/可写区域的大小</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">hasWritten</span><span class="params">(<span class="keyword">size_t</span> len)</span> </span></span><br><span class="line"><span class="function">  </span>&#123;</span><br><span class="line">	assert(len &lt;= writableBytes());</span><br><span class="line">	writerIndex += len;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">unwrite</span><span class="params">(<span class="keyword">size_t</span> len)</span></span></span><br><span class="line"><span class="function">  </span>&#123;</span><br><span class="line">    assert(len &lt;= readableBytes());</span><br><span class="line">    writerIndex_ -= len;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//从缓冲区中读取数据</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">retrieve</span><span class="params">(<span class="keyword">size_t</span> len)</span> </span>&#123; ... &#125;</span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">retrieveAll</span><span class="params">()</span> </span></span><br><span class="line"><span class="function">  </span>&#123;</span><br><span class="line">    readerIndex_ = kCheapPrepend;</span><br><span class="line">    writerIndex_ = kCheapPrepend;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">append</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span>* data, <span class="keyword">size_t</span> len)</span></span></span><br><span class="line"><span class="function">  </span>&#123;</span><br><span class="line">    ensureWritableBytes(len);</span><br><span class="line">    <span class="built_in">std</span>::copy(data, data+len, beginWrite());</span><br><span class="line">    hasWritten(len);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//5) 自动增长</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">ensureWritableBytes</span><span class="params">(<span class="keyword">size_t</span> len)</span></span></span><br><span class="line"><span class="function">  </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (writableBytes() &lt; len)</span><br><span class="line">    &#123;</span><br><span class="line">      makeSpace(len);</span><br><span class="line">    &#125;</span><br><span class="line">    assert(writableBytes() &gt;= len);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">//6) 内部腾挪</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">makeSpace</span><span class="params">(<span class="keyword">size_t</span> len)</span></span></span><br><span class="line"><span class="function">  </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (writableBytes() + prependableBytes() &lt; len + kCheapPrepend)</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="comment">// <span class="doctag">FIXME:</span> move readable data</span></span><br><span class="line">      buffer_.resize(writerIndex_+len);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">      <span class="comment">// move readable data to the front, make space inside buffer</span></span><br><span class="line">      assert(kCheapPrepend &lt; readerIndex_);</span><br><span class="line">      <span class="keyword">size_t</span> readable = readableBytes();</span><br><span class="line">      <span class="comment">//std::copy(first, last, destfirst) 要拷贝元素的首地址、尾地址和拷贝目的地首地址</span></span><br><span class="line">      <span class="built_in">std</span>::copy(begin()+readerIndex_,</span><br><span class="line">                begin()+writerIndex_,</span><br><span class="line">                begin()+kCheapPrepend);</span><br><span class="line">      readerIndex_ = kCheapPrepend;</span><br><span class="line">      writerIndex_ = readerIndex_ + readable;</span><br><span class="line">      assert(readable == readableBytes());</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">//8) 读取内容</span></span><br><span class="line"><span class="function"><span class="keyword">ssize_t</span> <span class="title">Buffer::readFd</span><span class="params">(<span class="keyword">int</span> fd, <span class="keyword">int</span>* savedErrno)</span> </span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">char</span> extrabuf[<span class="number">65536</span>];  <span class="comment">//在栈上开辟一块额外的缓冲区</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">iovec</span> <span class="title">vec</span>[2];</span></span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">size_t</span> writable = writableBytes();</span><br><span class="line">  <span class="comment">//iovec第一块指向buffer中的writable，第二块指向extrabuf</span></span><br><span class="line">  vec[<span class="number">0</span>].iov_base = begin()+writerIndex_;</span><br><span class="line">  vec[<span class="number">0</span>].iov_len = writable;</span><br><span class="line">  vec[<span class="number">1</span>].iov_base = extrabuf;</span><br><span class="line">  vec[<span class="number">1</span>].iov_len = <span class="keyword">sizeof</span> extrabuf;</span><br><span class="line">  <span class="comment">//当空间足够时，即 n &lt; writable，不使用extrabuf</span></span><br><span class="line">  <span class="comment">//否则读到extrabuf，然后再把extrabuf中的数据append()到Buffer中</span></span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">int</span> iovcnt = (writable &lt; <span class="keyword">sizeof</span> extrabuf) ? <span class="number">2</span> : <span class="number">1</span>;</span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">ssize_t</span> n = sockets::readv(fd, vec, iovcnt);  <span class="comment">//readv返回读到的总字节数n</span></span><br><span class="line">  <span class="keyword">if</span> (n &lt; <span class="number">0</span>)</span><br><span class="line">  &#123;</span><br><span class="line">    *savedErrno = errno;  <span class="comment">//存储异常</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span> <span class="keyword">if</span> (implicit_cast&lt;<span class="keyword">size_t</span>&gt;(n) &lt;= writable)</span><br><span class="line">  &#123;</span><br><span class="line">    writerIndex_ += n;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">  &#123;</span><br><span class="line">    writerIndex_ = buffer_.size();</span><br><span class="line">    append(extrabuf, n - writable);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> n;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/C/" rel="tag"># C++</a>
+              <a href="/tags/muduo/" rel="tag"># muduo</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/05/08/%E7%BA%A6%E7%91%9F%E5%A4%AB%E7%8E%AF%E9%97%AE%E9%A2%98/" rel="prev" title="约瑟夫环问题">
+      <i class="fa fa-chevron-left"></i> 约瑟夫环问题
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Buffer的功能需求"><span class="nav-number">1.</span> <span class="nav-text">Buffer的功能需求</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#muduo-base基础库"><span class="nav-number">2.</span> <span class="nav-text">muduo&#x2F;base基础库</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#types-h"><span class="nav-number">2.1.</span> <span class="nav-text">types.h</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#StringPiece-h"><span class="nav-number">2.2.</span> <span class="nav-text">StringPiece.h</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#muduo-net网络库"><span class="nav-number">3.</span> <span class="nav-text">muduo&#x2F;net网络库</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Buffer-cc和Buffer-h"><span class="nav-number">3.1.</span> <span class="nav-text">Buffer.cc和Buffer.h</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">yangwq</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="http://www.beian.miit.gov.cn/" rel="noopener" target="_blank">豫ICP备20013789号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yangwq</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

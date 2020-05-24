@@ -113,6 +113,16 @@
     <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
 
   </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
         <li class="menu-item menu-item-archives">
 
     <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
@@ -141,6 +151,79 @@
 
           <div class="content index posts-expand">
             
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-cn">
+    <link itemprop="mainEntityOfPage" href="http://ywq1113.github.io/2020/05/24/malloc%E5%92%8Calloc/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="yangwq">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="My Personal Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/05/24/malloc%E5%92%8Calloc/" class="post-title-link" itemprop="url">malloc和alloc</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2020-05-24 21:33:33 / Modified: 21:53:53" itemprop="dateCreated datePublished" datetime="2020-05-24T21:33:33+08:00">2020-05-24</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="malloc和alloc"><a href="#malloc和alloc" class="headerlink" title="malloc和alloc"></a>malloc和alloc</h1><p>在网上找到的转载的英文资料，附上自己的一些理解<a href="https://blog.csdn.net/missuever/article/details/540045" target="_blank" rel="noopener">点击连接</a></p>
+<p>Both the <code>malloc()</code> and the <code>calloc()</code> functions are used to allocate dynamic memory. Each operates slightly different from the other.</p>
+<p>malloc和calloc函数都用来分配动态内存，他们之间的差别很小</p>
+<p><code>malloc()</code> takes a size and returns a pointer to a chunk of memory at least that big: </p>
+<p><code>void *malloc( size_t size );</code></p>
+<p>malloc返回至少有申请内存大小的一块内存（可能更大）</p>
+<p><code>calloc()</code> takes a number of elements, and the size of each, and returns a pointer to a chunk of memoryat least big enough to hold them all:</p>
+<p><code>void *calloc( size_t numElements, size_t sizeOfElement );</code></p>
+<p>calloc返回至少有多块内存大小之和的内存（可能更大）</p>
+<p>There are one major difference and one minor difference between the two functions. The major difference is that <code>malloc()</code> does not initialize the allocated memory. The first time <code>malloc()</code> gives you a particular chunk of memory, the memory might be full of zeros. If memory has been allocated, freed, and reallocated, it probably has whatever junk was left in it. That means, unfortunately, that a program might run in simple cases (when memory is never reallocated) but break when used harder (and when memory is reused).</p>
+<p>他们之间最主要的差别是，malloc不初始化分配的内存，可能内存中充满的是零。如果内存已经被分配、释放或重新分配过，它可能存放着未知的内容。这意味着当这块内存从申请，修改，再到被重新分配，包含未知的内容会导致程序崩溃</p>
+<p><code>calloc()</code> fills the allocated memory with all zero bits. That means that anything there you are going to use as a char or an int of any length, signed or unsigned, is guaranteed to be zero. Anything you are going to use as a pointer is set to all zero bits. That is usually a null pointer, but it is not guaranteed.Anything you are going to use as a float or double is set to all zero bits; that is a floating-point zero on some types of machines, but not on all.</p>
+<p>calloc()用0 bits填充分配的内存，所以不需要初始化。通常这是一个空指针，但并不保证一定是。使用float或double类型被置为zero bits，在某些机器上是浮点零，但不保证一定是。</p>
+<p>The minor difference between the two is that <code>calloc()</code> returns an array of objects; <code>malloc()</code> returns one object. Some people use <code>calloc()</code> to make clear that they want an array.</p>
+<p>一些细小差别是calloc()返回一个包含对象的数组，而malloc返回一个对象。</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
       
   
   
@@ -775,12 +858,13 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-count">8</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
+          
         <span class="site-state-item-count">6</span>
         <span class="site-state-item-name">tags</span></a>
       </div>

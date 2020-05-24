@@ -17,13 +17,13 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"yangwqblog.cn","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+    var CONFIG = {"hostname":"yangwq1113.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
   <meta name="description" content="单例模式单例模式的精髓是一个类只产生一个实例对象，当对象被构造以后，阻止构造、拷贝构造、赋值和析构操作。单例模式可以考虑以下问题，如线程安全性和如何优化等。本文讨论学习单例模式过程中通过博客和书籍学习到的解决方案。 单线程(饿汉式)保证类仅有一个实例，并提供一个访问它的全局访问点。  构造函数私有化，避免外界使用new来创造实例 (思考&#x3D;delete和设为private的区别在哪里？) 通过判断一">
 <meta property="og:type" content="article">
 <meta property="og:title" content="单例模式学习">
-<meta property="og:url" content="http://yangwqblog.cn/2020/05/08/%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F%E5%AD%A6%E4%B9%A0/index.html">
+<meta property="og:url" content="http://yangwq1113.github.io/2020/05/08/%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F%E5%AD%A6%E4%B9%A0/index.html">
 <meta property="og:site_name" content="My Personal Blog">
 <meta property="og:description" content="单例模式单例模式的精髓是一个类只产生一个实例对象，当对象被构造以后，阻止构造、拷贝构造、赋值和析构操作。单例模式可以考虑以下问题，如线程安全性和如何优化等。本文讨论学习单例模式过程中通过博客和书籍学习到的解决方案。 单线程(饿汉式)保证类仅有一个实例，并提供一个访问它的全局访问点。  构造函数私有化，避免外界使用new来创造实例 (思考&#x3D;delete和设为private的区别在哪里？) 通过判断一">
 <meta property="og:locale" content="zh_CN">
@@ -33,7 +33,7 @@
 <meta property="article:tag" content="设计模式">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="http://yangwqblog.cn/2020/05/08/%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F%E5%AD%A6%E4%B9%A0/">
+<link rel="canonical" href="http://yangwq1113.github.io/2020/05/08/%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F%E5%AD%A6%E4%B9%A0/">
 
 
 <script id="page-configurations">
@@ -151,7 +151,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-cn">
-    <link itemprop="mainEntityOfPage" href="http://yangwqblog.cn/2020/05/08/%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F%E5%AD%A6%E4%B9%A0/">
+    <link itemprop="mainEntityOfPage" href="http://yangwq1113.github.io/2020/05/08/%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F%E5%AD%A6%E4%B9%A0/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">

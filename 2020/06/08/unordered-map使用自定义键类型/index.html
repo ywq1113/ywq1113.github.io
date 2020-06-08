@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"ywq1113.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="unordered_map定义(C++11)参考博客 1234567template&lt;    class Key,    class T,    class Hash &#x3D; std::hash&lt;Key&gt;,    class KeyEqual &#x3D; std::equal_to&lt;Key&gt;,    class Allocator &#x3D; std::allocator&lt; std">
+<meta property="og:type" content="article">
+<meta property="og:title" content="unordered_map使用自定义键类型">
+<meta property="og:url" content="http://ywq1113.github.io/2020/06/08/unordered-map%E4%BD%BF%E7%94%A8%E8%87%AA%E5%AE%9A%E4%B9%89%E9%94%AE%E7%B1%BB%E5%9E%8B/index.html">
+<meta property="og:site_name" content="My Personal Blog">
+<meta property="og:description" content="unordered_map定义(C++11)参考博客 1234567template&lt;    class Key,    class T,    class Hash &#x3D; std::hash&lt;Key&gt;,    class KeyEqual &#x3D; std::equal_to&lt;Key&gt;,    class Allocator &#x3D; std::allocator&lt; std">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-06-08T08:26:51.000Z">
+<meta property="article:modified_time" content="2020-06-08T08:28:32.000Z">
+<meta property="article:author" content="yangwq">
+<meta property="article:tag" content="C++">
+<meta property="article:tag" content="标准库">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://ywq1113.github.io/2020/06/08/unordered-map%E4%BD%BF%E7%94%A8%E8%87%AA%E5%AE%9A%E4%B9%89%E9%94%AE%E7%B1%BB%E5%9E%8B/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-cn'
+  };
+</script>
+
+  <title>unordered_map使用自定义键类型 | My Personal Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">My Personal Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-cn">
+    <link itemprop="mainEntityOfPage" href="http://ywq1113.github.io/2020/06/08/unordered-map%E4%BD%BF%E7%94%A8%E8%87%AA%E5%AE%9A%E4%B9%89%E9%94%AE%E7%B1%BB%E5%9E%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="yangwq">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="My Personal Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          unordered_map使用自定义键类型
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2020-06-08 16:26:51 / Modified: 16:28:32" itemprop="dateCreated datePublished" datetime="2020-06-08T16:26:51+08:00">2020-06-08</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="unordered-map定义-C-11"><a href="#unordered-map定义-C-11" class="headerlink" title="unordered_map定义(C++11)"></a>unordered_map定义(C++11)</h1><p><a href="https://blog.csdn.net/y109y/article/details/82669620#3.1" target="_blank" rel="noopener">参考博客</a></p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;</span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Key</span>,</span></span><br><span class="line"><span class="class">    <span class="title">class</span> <span class="title">T</span>,</span></span><br><span class="line"><span class="class">    <span class="title">class</span> <span class="title">Hash</span> = <span class="title">std</span>:</span>:hash&lt;Key&gt;,</span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">KeyEqual</span> = <span class="title">std</span>:</span>:equal_to&lt;Key&gt;,</span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Allocator</span> = <span class="title">std</span>:</span>:allocator&lt; <span class="built_in">std</span>::pair&lt;<span class="keyword">const</span> Key, T&gt; &gt;</span><br><span class="line">&gt; <span class="class"><span class="keyword">class</span> <span class="title">unordered_map</span>;</span></span><br></pre></td></tr></table></figure>
+
+<p>Key代表键值（key），T是根据哈希函数得到的值（value），Hash是哈希函数的函数对象，KeyEqual是等比函数的函数对象，通过<code>&quot;==&quot;</code>来判断两个key是否相等。<br>想实现自定义的键类型，必须实现hash函数和等比函数。</p>
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><ul>
+<li>法一：利用std::function中的默认hash函数std::hash</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;functional&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unordered_map&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">mypair</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="keyword">char</span> first;</span><br><span class="line">    <span class="keyword">char</span> second;</span><br><span class="line"></span><br><span class="line">    mypair(<span class="keyword">char</span> a, <span class="keyword">char</span> b)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">if</span>( a &lt; b)</span><br><span class="line">        &#123;</span><br><span class="line">            first = a;</span><br><span class="line">            second = b;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            first = b;</span><br><span class="line">            second = a;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">bool</span> <span class="keyword">operator</span>==(<span class="keyword">const</span> mypair&amp; rhs)</span><br><span class="line">    &#123;</span><br><span class="line">    <span class="keyword">return</span> rhs.first == <span class="keyword">this</span>-&gt;first &amp;&amp; rhs.second == <span class="keyword">this</span>-&gt;second;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">size_t</span> <span class="title">mypair_hash</span><span class="params">(<span class="keyword">const</span> mypair&amp; tmp)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> hash&lt;<span class="keyword">char</span>&gt;()(tmp.first) ^ hash&lt;<span class="keyword">char</span>&gt;()(tmp.second);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">//ERRO: unordered_map&lt;mypair, int, decltype(&amp;mypair_hash)&gt; ids;</span></span><br><span class="line">    <span class="comment">//ERRO: unordered_map&lt;mypair, int, mypair_hash&gt; ids(100, mypair_hash );</span></span><br><span class="line">    <span class="comment">//OK: unordered_map&lt;mypair, int, decltype(&amp;mypair_hash)&gt; ids(100, mypair_hash );</span></span><br><span class="line">    unordered_map&lt;mypair, int, decltype(&amp;mypair_hash)&gt; memo(20/*, mypair_hash*/);  //在这里decltype后面必须要使用引用</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * code</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>Note:</strong></p>
+<p>1) decltype(exp)推导的内容如果是一个左值，那么 decltype(exp) 的类型就是 exp 的引用。在这里mypair_hash是一个函数，如果是自动推导得到的是函数的返回值，不是引用类型，运行时编译器会报错，在hashtable_policy.h中：<br><code>field &#39;std::__detail::_Hashtable_ebo_helper&lt;1, long long unsigned int(const mypair&amp;), false&gt;::_M_tp&#39; invalidly declared function type</code></p>
+<p>2) 参考的博客中说memo初始化时必须传入mypair_hash构造函数，但是我尝试不传入发现也是可以编译通过和运行的。</p>
+<ul>
+<li>法二：重载operator()类，打包哈希函数变成函数对象</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">mypair</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="keyword">char</span> first;</span><br><span class="line">    <span class="keyword">char</span> second;</span><br><span class="line"></span><br><span class="line">    mypair(<span class="keyword">const</span> <span class="keyword">char</span>&amp; a, <span class="keyword">const</span> <span class="keyword">char</span>&amp; b)</span><br><span class="line">    &#123;</span><br><span class="line">        first = a;</span><br><span class="line">        second = b;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">bool</span> <span class="keyword">operator</span>==(<span class="keyword">const</span> mypair&amp; rhs) <span class="keyword">const</span></span><br><span class="line">    &#123;</span><br><span class="line">    <span class="keyword">return</span> rhs.first == first &amp;&amp; rhs.second == second;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">hashname</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="function"><span class="keyword">size_t</span> <span class="title">operator</span><span class="params">()</span><span class="params">(<span class="keyword">const</span> mypair&amp; tmp)</span> <span class="keyword">const</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> (hash&lt;<span class="keyword">char</span>&gt;()(tmp.first)) ^ (hash&lt;<span class="keyword">char</span>&gt;()(tmp.second));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    unordered_map&lt;mypair, int, hashname&gt; memo(20);</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * code</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以直接运行通过，没有什么坑。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/C/" rel="tag"># C++</a>
+              <a href="/tags/%E6%A0%87%E5%87%86%E5%BA%93/" rel="tag"># 标准库</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/05/24/malloc%E5%92%8Calloc/" rel="prev" title="malloc和alloc">
+      <i class="fa fa-chevron-left"></i> malloc和alloc
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#unordered-map定义-C-11"><span class="nav-number">1.</span> <span class="nav-text">unordered_map定义(C++11)</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#实现"><span class="nav-number">1.1.</span> <span class="nav-text">实现</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">yangwq</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">9</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="http://www.beian.miit.gov.cn/" rel="noopener" target="_blank">豫ICP备20013789号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yangwq</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

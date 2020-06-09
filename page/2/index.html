@@ -155,6 +155,78 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-cn">
+    <link itemprop="mainEntityOfPage" href="http://ywq1113.github.io/2020/04/26/gdb%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95%E7%A7%AF%E7%B4%AF/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="yangwq">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="My Personal Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/04/26/gdb%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95%E7%A7%AF%E7%B4%AF/" class="post-title-link" itemprop="url">gdb使用方法积累(不断更新)</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2020-04-26 21:34:53" itemprop="dateCreated datePublished" datetime="2020-04-26T21:34:53+08:00">2020-04-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-05-11 15:07:32" itemprop="dateModified" datetime="2020-05-11T15:07:32+08:00">2020-05-11</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="makefile"><a href="#makefile" class="headerlink" title="makefile"></a>makefile</h1><p>1）如果不把生成的最后执行的文件放在第一行，输入make它就默认只执行第一行的code。<br>2）如果是在centOS7下面拷贝的话，会自动转换<code>TAB</code>为空格，然后编译命令失去作用。</p>
+<h1 id="线程池"><a href="#线程池" class="headerlink" title="线程池"></a>线程池</h1><p>只适用于无状态的服务器，因为不能保证是同一个工作线程处理多个客户请求。同一个连接上的客户请求，可能由不同的线程来处理。</p>
+<h2 id="pthread-create-函数"><a href="#pthread-create-函数" class="headerlink" title="pthread_create()函数"></a>pthread_create()函数</h2><p><code>pthread_create</code>函数第三个参数必须指向一个静态函数(static)，否则编译没办法通过。如果想在static函数中使用类的动态成员（如成员函数和成员变量），通过以下方法来实现：<br>1）通过类的静态对象来调用；<br>2）将类的对象作为参数传递给静态函数，然后在静态函数中引用这个对象，并调用其动态方法。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">threadpool</span>&#123;</span></span><br><span class="line">    <span class="keyword">private</span>:</span><br><span class="line">        <span class="function"><span class="keyword">static</span> <span class="keyword">void</span>* <span class="title">worker</span><span class="params">(<span class="keyword">void</span>* arg)</span></span>;</span><br><span class="line">            <span class="function"><span class="keyword">void</span> <span class="title">run</span><span class="params">()</span></span>;</span><br><span class="line">            <span class="keyword">public</span>:</span><br><span class="line">                ...</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span>* <span class="title">threadpool::worker</span><span class="params">(<span class="keyword">void</span>* arg)</span></span>&#123;</span><br><span class="line">        threadpool* pool = (threadpool*)arg;</span><br><span class="line">            pool-&gt;run();</span><br><span class="line">                <span class="keyword">return</span> pool;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="bind失败"><a href="#bind失败" class="headerlink" title="bind失败"></a>bind失败</h1><p>在华为云服务器上bind失败，原因可能如下：<br><strong>1）端口未开放</strong><br>查看端口开放命令<br><code>lsof -i:80</code><br><code>netstat -aptn |grep -i 80</code> 查看所有端口命令<br><code>netstat -lptn |grep -i 80</code>  查看TCP命令<br><code>netstat -lpun |grep -i 80</code> 查看UDP命令</p>
+<p><strong>2）端口已被占用</strong></p>
+<h1 id="CentOS7查看核心数"><a href="#CentOS7查看核心数" class="headerlink" title="CentOS7查看核心数"></a>CentOS7查看核心数</h1><p><code>grep &#39;core id&#39; /proc/cpuinfo | sort -u | wc -l</code>  华为云服务器是单核的</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-cn">
     <link itemprop="mainEntityOfPage" href="http://ywq1113.github.io/2020/04/26/hello-world/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -290,14 +362,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">11</span>
+          <span class="site-state-item-count">12</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-count">9</span>
         <span class="site-state-item-name">tags</span></a>
       </div>
   </nav>

@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"ywq1113.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="看了一篇博客，个人感觉很有帮助，目前转载过来留存，正在征询作者意见，如果不同意就删掉啦。 原文链接：https:&#x2F;&#x2F;blog.csdn.net&#x2F;kenanxiuji&#x2F;article&#x2F;details&#x2F;48547285 最近，我一直忙于追踪分析，咱公司高并发代理服务器内存一直占用过高的问题。该问题表现如下，使用python脚本压测，服务器使用的物理内存一直飙升很快上G、虚拟内存更是高达数10G，没有下">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux高并发服务器内存泄漏追踪转载">
+<meta property="og:url" content="http://ywq1113.github.io/2020/06/09/Linux%E9%AB%98%E5%B9%B6%E5%8F%91%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F%E8%BF%BD%E8%B8%AA/index.html">
+<meta property="og:site_name" content="My Personal Blog">
+<meta property="og:description" content="看了一篇博客，个人感觉很有帮助，目前转载过来留存，正在征询作者意见，如果不同意就删掉啦。 原文链接：https:&#x2F;&#x2F;blog.csdn.net&#x2F;kenanxiuji&#x2F;article&#x2F;details&#x2F;48547285 最近，我一直忙于追踪分析，咱公司高并发代理服务器内存一直占用过高的问题。该问题表现如下，使用python脚本压测，服务器使用的物理内存一直飙升很快上G、虚拟内存更是高达数10G，没有下">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-06-09T14:43:24.000Z">
+<meta property="article:modified_time" content="2020-06-09T14:46:31.000Z">
+<meta property="article:author" content="yangwq">
+<meta property="article:tag" content="C++">
+<meta property="article:tag" content="高性能服务器">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://ywq1113.github.io/2020/06/09/Linux%E9%AB%98%E5%B9%B6%E5%8F%91%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F%E8%BF%BD%E8%B8%AA/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-cn'
+  };
+</script>
+
+  <title>Linux高并发服务器内存泄漏追踪转载 | My Personal Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">My Personal Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-cn">
+    <link itemprop="mainEntityOfPage" href="http://ywq1113.github.io/2020/06/09/Linux%E9%AB%98%E5%B9%B6%E5%8F%91%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F%E8%BF%BD%E8%B8%AA/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="yangwq">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="My Personal Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux高并发服务器内存泄漏追踪转载
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2020-06-09 22:43:24 / Modified: 22:46:31" itemprop="dateCreated datePublished" datetime="2020-06-09T22:43:24+08:00">2020-06-09</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>看了一篇博客，个人感觉很有帮助，目前转载过来留存，正在征询作者意见，如果不同意就删掉啦。</p>
+<p>原文链接：<a href="https://blog.csdn.net/kenanxiuji/article/details/48547285" target="_blank" rel="noopener">https://blog.csdn.net/kenanxiuji/article/details/48547285</a></p>
+<p>最近，我一直忙于追踪分析，咱公司高并发代理服务器内存一直占用过高的问题。该问题表现如下，使用python脚本压测，服务器使用的物理内存一直飙升很快上G、虚拟内存更是高达数10G，没有下降的趋势。当压测程序停止运行后，整个服务占用的物理内存以及虚拟内存并没有下降的趋势。</p>
+<p>首先简诉咱服务器运行的平台是centos-6.3（linux-2.6.32），该服务器是多进程的，基于libevent网络通信框架，以bufferevent为核心，并使用google::protobuf通信协议进行数据传输。</p>
+<p>根据top -p /pmap -dx 等命令，检测出咱服务器进程内存占用很高，我揣测产生了内存泄露。内存泄露有两种，第一种是进程一直持有不在需要或者使用的内存，这不是狭义的内存泄露，因为没有野指针的产生，可以归为广义的内存泄露，这是危害最大的，也是很难捕捉的内存泄露，使用valgrind等工具是没有办法检测出来的；第二种是进程通过malloc、new分配了堆内存，却由于各种原因，未能释放，这是狭义的内存泄露，可以通过valgrind等内存泄露工具检测到的。</p>
+<p>首先，我采用valgrind进行内存泄露检测。的确发现了部分内存泄露，不过只有数10M，这个和top -p/pmap -dx等命令看出的内存实际使用情况不符。因此基本排除了上面提到的第二种内存泄露引起的。缺少了内存泄露检测工具的帮助，想要解决这个问题如同大海捞针。我开始怀疑第一种内存泄露造成的。如何定位呢？只能采用二分法，在程序的关键节点设置检测点，注释无关代码等手段逐一排查。</p>
+<p>咱使用了protobuf通信协议，有同事提出是不是protobuf协议的误用，造成内存堆积呢？我的确在网上找到了有关protobuf的误用造成的内存堆积的案例。原因如下，为了提升服务器的性能，避免内存碎片，protobuf消息对象使用后，就直接缓存起来，当下次使用的时候，直接从对象池中取出，并调用了clear()函数，然后再进行构造新的消息。在这个过程中，protobuf并没有因为调用了clear()函数，而释放持有的内存，其实根本没有释放任何内存，而是递归调用，恢复成员为默认值。如果一个小对象复用了之前的大对象，这个时候内存并没有紧缩，仍然持有大对象所占有的内存，这样的确会浪费大量的空间。不过，由于咱服务器对象池最多缓存1024个对象，获取对象的时候从池中弹出，完成使用后又放回池中。这个过程是动态的，因此对象池中的对象总是在变，也就是内存是弹性的，可伸缩的理论上不会成为问题。在压测过程中，使用的测试数据包不超过1M，基本可以推断，这不是问题。不过，为了证实我的推论，我采用定时清空对象池，或者压根不缓存protobuf对象两种方式，不幸的是，内存仍然上涨。</p>
+<p>兄弟，还是老实点吧！只能从数据的流动方向开始追踪问题。</p>
+<p>第一步检测网络通信框架收发数据是否会产生大量的内存占用？可以通过bufferevent获取当前输入缓冲区的可读数据的字节长度，一旦libevent通知用户有数据可读，就将缓冲区中的所有数据抽出，尽可能的保证bufferevent缓冲区中没有堆积数据。效果很明显，内存几乎没有上涨。对数据的处理几乎没有延时，基本可以认为是malloc以后立马就释放。</p>
+<p>第二步检测协议解析是否产生内存泄露？数据完成解析后，就直接将这部分数据抽取出去，并立即返回。我在做这个实验的过程中，我出现了逻辑失误，本意是希望不停的从evbuffer中取出数据进行解析，直到evbuffer中的剩余数据不能完整构成协议。事实是libevent每通知一次有数据可读，我就从evbuffer中取出一个数据进行解析，这样就造成了数据堆积在bufferevent缓冲区。原因是多个数据同时到达TCP接收缓冲区，这时epoll感知到某连接有可读数据，就立刻通知libevent，libevent处理可读事件，从TCP缓冲区接收完数据（可能由多个消息组成的）后，调用咱服务器注册的读回调函数，不过，我们在读回调函数里面只取了一个消息，最终bufferevent中会堆积大量的数据，占用大量的内存。当连接断开后，libevent应该会释放bufferevent占用的内存，然而内存并没有显著下降。感觉十分诡异，难道valgrind没有检测出内存泄露？重新调整了测试逻辑，保证向libevent注册的读回调函数，循环读取数据，直到不是一个完整的协议为止。这种测试比第一步的测试仅仅多了协议解析，测试结果显示内存基本没有增长，也基本排除了数据解析造成内存泄露的可能。</p>
+<p>第三步在第二步中不小心做的一次读回调，只解析一个数据的测试，造成大量数据堆积在evbuffer中，当连接断开后，内存竟然下降不明显。为了更加充分的暴露这个现象，我决定再做一次测试——压测脚本不停的发数据，服务端什么也不做，当压测结束的时候，所有的数据都应该堆积在evbuffer中，然而当连接断开后，服务器进程占用的物理内存并没有下降。难道是libevent没有感知到部分连接已经断开的事实？这样内存还堆积在libevent中，而且libevent在退出的时候，还能正确释放这些内存，因此valgrind就检测不出来，这个推断看上去比较合理。如何证明libevent是否是清白的呢？似乎进入死胡同，暂时放一放，继续朝下走。</p>
+<p>第四步检测protobuf对象以及状态机对象的构造是否会造成内存泄露？协议解析完成后，经过简单的逻辑处理，就生成protobuf对象和状态机对象，然后立刻delete。内存仍然没有增长，基本可以排除protobuf的嫌疑。</p>
+<p>以此类推，逐一排查，有点像刑侦破案一样。后来终于发现了一个可疑点。当注释SendRequest函数后，整个进程占用的内存几乎没有增长。重点就放在了这个函数上，进入该函数后，粗一看，没发现什么问题。这个函数就干一件事，把protobuf的消息转换成evbuffer，以零拷贝的方式把数据加入到bufferevent的输出缓冲区。就几行代码，没有什么不妥啊，有点发愣。把数据加入到libevent以后，竟然会出现内存上涨的现象。我开始怀疑是不是哪里测试错了呢？干扰了判断呢？经过好几次测试后，我基本断定就是这里出了问题。又该如何去定位呢？这么成熟的网络通信库，怎么会出问题呢？</p>
+<p>为了搞清楚bufferevent使用内存的情况，我开始剖析libevent库，给这个库增加接口，包括获取buffer当前的引用计数，获取bufferevent当前的引用计数，获取当前buffer实际分配的内存大小，获取当前buffer实际分配的chain的个数等，在与内存分配与释放相关的函数中增加了文件日志。bufferevent把数据存储在evbuffer中，而evbuffer是由evbuffer_chain链表构成，很显然evbuffer_chain的分配总量就能大致体现出整个网络通信的数据总流量，另外，统计一下evbuffer_chain的释放总量，根据分配总量和释放总量就能证明libevent的清白。为了做到这点，为evbuffer_chain_new和evbuffer_chain_free增加了统计总量的逻辑。</p>
+<p>首先我根据evbuffer_chain_new与evbuffer_chain_free的分配与释放总量的统计，显示出libevent分配的内存总量与释放的内存总量相等，足以证明libevent是清白的。明明释放了内存，为什么没有看到进程的内存使用量下降呢？感觉十分诡异！！！另外，我通过获取当前buffer实际分配的内存大小与实际使用的内存大小，不看不知道，一看吓一跳，evbuffer分配的空间远远超过了实际数据所需的大小。通过查看代码发现，由protobuf转换成evbuffer的时候，默认指定128k的分配空间，不管数据本身有多大，不过，evbuffer分配的chain不是128k，而是256k?我认真阅读了libevent源码后发现，在64位操作系统上，是按照1k的默认大小做逻辑左移，由于咱指定128k,不过还得加上chain本身的大小，也就是超过128k,这样只能对1k左移8次也就是256k。正是由于这个原因造成了内存的使用率极其低下，当网络拥塞的时候，或者通信双方的处理速度差过大的时候，就会出现大量的数据堆积在bufferevent中，我统计过拥塞较大时，bufferevent中缓存了高达15000个chain，而每个chain又是256k，这个累积量就高达3.6G的虚拟内存，而实际有效载荷才29.2M，正如top -p显示的，DATA段远远大于RES段。通过tcpdump抓包显示proxy（本服务）与storage（后端服务）通信的连接，本来是长连接，不过在这种高压环境下，出现了大量的断开、重连的现象，而且都是响应RST，显然这条连接不够问题，是否和虚拟网络相关呢？由于连接频繁的断开，libevent会迅速的回收释放的资源，不过，这样也会加剧内存碎片。</p>
+<p>现象基本描述完咯，感觉还是一头雾水，问题出在哪里呢？首先，我基本排除了有大量内存堆积或者泄露（狭义的），因为内存消耗最大的一定是libevent，毕竟所有的数据的传输都依赖libevent，而根据统计显示，libevent分配了多少内存，最终的完全释放了，其他的内存消耗都是不会出现内存堆积的。其次，虚拟内存飙升到数10G的原因是比较明确的，就是服务进程分配了大量未使用的内存，就是前面提到的由protobuf转换成evbuffer的时候，没有根据数据本身的大小进行内存分配所致，至于为什么没有降下来，还是不确定。</p>
+<p>不得不回到前面提到的内存已经释放，为什么top -p出来的内存使用量没有下降呢？调用free就应该把由malloc申请的内存归还给操作系统，有错吗？通过网上查询得知，我对free的认识是错误的，由于free是由glibc库提供的，而glibc默认采用ptmalloc进行内存的分配。ptmalloc为了提升性能，不会立刻把内存归还给操作系统，归还给操作系统的条件是很苛刻的。毕竟，与系统底层通信的代价是昂贵的，如果动辄就直接操纵大量小块内存，就相当于频繁地与系统调用进行通信，这样显然会降低程序的运行效率。将小块内存放入brk维护的一个堆中，就相当于实现了一块缓存（cache），用完了可以先攒起来，到时候可以一起归还给系统。不过，由于它的实现相对来说还是比较简单，只维护了堆顶的一个指针。因此想要归还给系统的话，必须从顶向下，依次归还。想象一下这种情况，假如堆顶有块内存一直被占用着，而下面的所有内存都已经没用了。那下面的这些内存，可以归还给系统吗？很遗憾，这种设计决定了答案是不可以。这就出现了“洞（Hole）”的问题。</p>
+<p>问题已经水落石出，不过，还是没有十足的把握，毕竟没有直接证据呢？还好glibc提供了一个malloc_trim()这个函数，头文件是<code>&lt;malloc.h&gt;</code>，这个函数将会重新整理内存，释放符合条件的已经归还给glibc，但未归还给操作系统的内存。为了证实推论，我把malloc_trim(0)放入信号处理函数中，当压测程序结束运行之后，待cpu使用率为0.0%的时候，我触发了一个信号。内存奇迹般的下降了，以下是真是测量数据（去原文找，图就不放了）</p>
+<p>物理内存的降幅十分明显，至于虚拟内存为什么没有释放，可能和malloc_trim的工作原理相关。</p>
+<p>总而言之，想要根治这类问题，就需要在应用层使用内存池，避免频繁使用malloc与free，这种由于glibc的原因造成的内存泄露，十分隐蔽，希望有类似问题困扰的读者不妨可以试一试。</p>
+<p>————————————————<br>版权声明：本文为CSDN博主「禾田八久」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。</p>
+<p>原文链接：<a href="https://blog.csdn.net/kenanxiuji/article/details/48547285" target="_blank" rel="noopener">https://blog.csdn.net/kenanxiuji/article/details/48547285</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/C/" rel="tag"># C++</a>
+              <a href="/tags/%E9%AB%98%E6%80%A7%E8%83%BD%E6%9C%8D%E5%8A%A1%E5%99%A8/" rel="tag"># 高性能服务器</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/06/09/CentOS7%E6%97%A0%E6%B3%95%E8%BF%9E%E6%8E%A5mysqlclient/" rel="prev" title="CentOS7无法连接mysqlclient">
+      <i class="fa fa-chevron-left"></i> CentOS7无法连接mysqlclient
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">yangwq</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">12</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+  <div class="beian"><a href="http://www.beian.miit.gov.cn/" rel="noopener" target="_blank">豫ICP备20013789号 </a>
+  </div>
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yangwq</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

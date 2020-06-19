@@ -186,7 +186,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-16 13:52:04" itemprop="dateModified" datetime="2020-05-16T13:52:04+08:00">2020-05-16</time>
+                <time title="Modified: 2020-06-19 22:27:57" itemprop="dateModified" datetime="2020-06-19T22:27:57+08:00">2020-06-19</time>
               </span>
 
           
@@ -207,18 +207,14 @@
 <p>应用程序缓存——减少对数据库的查询</p>
 <p>Web服务器缓存——减少应用服务器请求</p>
 <p>客户端浏览器请求——减少对网站的访问</p>
-<h1 id="缓存常见问题及解决方法"><a href="#缓存常见问题及解决方法" class="headerlink" title="缓存常见问题及解决方法"></a>缓存常见问题及解决方法</h1><h2 id="缓存与数据双写不一致"><a href="#缓存与数据双写不一致" class="headerlink" title="缓存与数据双写不一致"></a>缓存与数据双写不一致</h2><p>只要用到缓存，就存在缓存和数据库双存储双写的一致性问题。</p>
-<p>解决方案：</p>
-<p>1）读写串行化：读的时候先读缓存，没有就读数据库，然后取出放入缓存中，同时返回响应；写的时候先更新数据库，然后删除缓存。（思考不删除缓存，直接更新缓存行不行？）</p>
-<h2 id="redis缓存雪崩"><a href="#redis缓存雪崩" class="headerlink" title="redis缓存雪崩"></a>redis缓存雪崩</h2><p>缓存中大批量热点数据过期后涌入大量查询请求，此时缓存服务器失效，或者是缓存服务器宕机，请求渗透到数据库层，引起数据库压力造成查询堵塞或宕机。</p>
-<p>事前：redis高可用，主从+哨兵，redis cluster避免全盘崩溃</p>
-<p>事后：redis持久化，一旦重启自动从磁盘上加载数据，快速恢复缓存数据</p>
-<p>解决方案：<br>系统A接收到请求后，先查本地cache，没查到再去检查redis，redis中也没有再去查数据库，将数据库的结果写入到cache和redis中。限流组件可以设置每秒的请求有多少通过组件，未通过的请求返回一个默认值或友情提醒。</p>
-<h2 id="redis缓存穿透"><a href="#redis缓存穿透" class="headerlink" title="redis缓存穿透"></a>redis缓存穿透</h2><p>对于系统A，假设每秒5000个请求，其中4000个是黑客发出的恶意攻击。而这4000个请求在缓存中找不到，数据库中也找不到，会直接增加数据库的压力。</p>
-<p>解决方案：<br>1）使用bloom filter，检查key是否存在，如果不存在直接拒绝掉，可能存在的再发送到后面的redis。缺陷是布隆过滤器后期维护比较麻烦，数据只能新增不能删除并且初始化时需要导入缓存的全盘数据；<br>2）多级缓存，本地缓存再来一层</p>
-<h2 id="缓存击穿"><a href="#缓存击穿" class="headerlink" title="缓存击穿"></a>缓存击穿</h2><p>对于一个热点key，在缓存失效的一瞬间有5000个请求同时访问就会击穿缓存直接访问数据库。</p>
-<p>解决方案：1）将热点数据设置为永远不过期；2）基于redis实现互斥锁，等第一个请求构建完缓存后再释放锁，进而其他请求才能通过key访问数据。</p>
-
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/04/27/%E7%BC%93%E5%AD%98%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 

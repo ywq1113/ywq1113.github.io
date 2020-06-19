@@ -29,7 +29,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://uploadfiles.nowcoder.com/images/20200608/569886209_1591610186458_4A47A0DB6E60853DEDFCFDF08A5CA249">
 <meta property="article:published_time" content="2020-06-08T09:54:22.000Z">
-<meta property="article:modified_time" content="2020-06-08T09:57:26.000Z">
+<meta property="article:modified_time" content="2020-06-19T14:22:36.000Z">
 <meta property="article:author" content="yangwq">
 <meta property="article:tag" content="后台开发">
 <meta name="twitter:card" content="summary">
@@ -185,10 +185,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">Posted on</span>
-              
 
-              <time title="Created: 2020-06-08 17:54:22 / Modified: 17:57:26" itemprop="dateCreated datePublished" datetime="2020-06-08T17:54:22+08:00">2020-06-08</time>
+              <time title="Created: 2020-06-08 17:54:22" itemprop="dateCreated datePublished" datetime="2020-06-08T17:54:22+08:00">2020-06-08</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-06-19 22:22:36" itemprop="dateModified" datetime="2020-06-19T22:22:36+08:00">2020-06-19</time>
+              </span>
 
           
             <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
@@ -220,6 +226,8 @@
 <p>  两个并发操作，一个查询缓存，一个更新操作。先更新（选择删除缓存），再查询，此时无法命中缓存，会先把老的数据从数据库读出放入缓存中，然后更新数据库。此时缓存中是脏的数据，并且一直这样脏下去。所以，这种场景应该选择缓存更新，而不是删除Cache后再从数据库更新。</p>
 </li>
 </ul>
+<a id="more"></a>
+
 <h2 id="更新缓存的四种模式"><a href="#更新缓存的四种模式" class="headerlink" title="更新缓存的四种模式"></a>更新缓存的四种模式</h2><h3 id="Cache-Aside-Pattern"><a href="#Cache-Aside-Pattern" class="headerlink" title="Cache Aside Pattern"></a>Cache Aside Pattern</h3><p>缓存预留模式，最常用的模式之一。这种模式的重点在于先把数据更新到数据库，成功后让缓存失效，最后更新缓存。</p>
 <p>在并发的情况下，更新前查询缓存命中，此时是老数据，更新过程中查询只有两种情况：1）更新过程中命中缓存，获取脏数据，之后再查询都是新的数据；2）更新后让缓存失效，此时查询无法命中缓存，直接从数据库获取新的数据。</p>
 <p>这样不会出现上面谈到的缓存中总是脏数据的逻辑问题。但是也不代表这种做法是稳定安全的。如果在读数据的过程没有命中缓存，同时有一个并发写的操作，读操作从数据库得到脏数据，数据库更新，之前的读操作再把老的数据放进去，就会造成脏数据。</p>

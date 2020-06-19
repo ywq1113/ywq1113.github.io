@@ -28,7 +28,7 @@
 <meta property="og:description" content="约瑟夫环来源于犹太历史学家Josephus所讲述的一个故事。罗马人占领某地后，39个犹太人和Josephus以及他的朋友躲到了一个洞中。他们决定围成一个圈，逐个自杀也不要被罗马人抓住。自杀规则是从第一个人开始，数到3的人就自杀，然后由下一个人重新报数。Josephus和他的朋友不想自杀，他们自己选择了两个位置，活到了最后。 将这个问题抽象以后，在LeetCode上有这么一道题圆圈中最后剩下的数字在">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2020-05-08T14:23:25.000Z">
-<meta property="article:modified_time" content="2020-05-11T07:05:50.578Z">
+<meta property="article:modified_time" content="2020-06-19T14:24:23.000Z">
 <meta property="article:author" content="yangwq">
 <meta property="article:tag" content="数据结构与算法">
 <meta name="twitter:card" content="summary">
@@ -191,7 +191,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-05-11 15:05:50" itemprop="dateModified" datetime="2020-05-11T15:05:50+08:00">2020-05-11</time>
+                <time title="Modified: 2020-06-19 22:24:23" itemprop="dateModified" datetime="2020-06-19T22:24:23+08:00">2020-06-19</time>
               </span>
 
           
@@ -214,6 +214,8 @@
       
         <p>约瑟夫环来源于犹太历史学家Josephus所讲述的一个故事。罗马人占领某地后，39个犹太人和Josephus以及他的朋友躲到了一个洞中。<br>他们决定围成一个圈，逐个自杀也不要被罗马人抓住。自杀规则是从第一个人开始，数到3的人就自杀，然后由下一个人重新报数。<br>Josephus和他的朋友不想自杀，他们自己选择了两个位置，活到了最后。</p>
 <p>将这个问题抽象以后，在LeetCode上有这么一道题<a href="https://leetcode-cn.com/problems/yuan-quan-zhong-zui-hou-sheng-xia-de-shu-zi-lcof/" target="_blank" rel="noopener">圆圈中最后剩下的数字</a><br>在我做笔试的经历中，出现了题目的变种，变化之处在于删除的数字间隔是变化的，随着删除个数而增长。</p>
+<a id="more"></a>
+
 <h1 id="求解思路"><a href="#求解思路" class="headerlink" title="求解思路"></a>求解思路</h1><h2 id="循环数组（链表）"><a href="#循环数组（链表）" class="headerlink" title="循环数组（链表）"></a>循环数组（链表）</h2><p>题中是一个圈，所以启发我们用一个循环数组或链表来解决这个问题。由于数组需要一整块的内存且删除操作不如链表，本文选则STL库容器list来实现<br>一个环形链表。只需要迭代器每次扫描到链表末尾时，将其移动到链表头部即可。</p>
 <p>需要注意的点：</p>
 <p>1) 扫描链表时，一定要注意走到<code>list.end()</code>要转移到<code>begin()</code><br>2) <code>list.erase()</code>删除操作，迭代器移动到被删除节点的下一个位置，所以重点关注next节点<br>是否是尾部迭代器。</p>

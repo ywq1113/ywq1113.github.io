@@ -247,10 +247,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">Posted on</span>
-              
 
-              <time title="Created: 2020-06-09 22:43:24 / Modified: 22:46:31" itemprop="dateCreated datePublished" datetime="2020-06-09T22:43:24+08:00">2020-06-09</time>
+              <time title="Created: 2020-06-09 22:43:24" itemprop="dateCreated datePublished" datetime="2020-06-09T22:43:24+08:00">2020-06-09</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-06-19 22:16:53" itemprop="dateModified" datetime="2020-06-19T22:16:53+08:00">2020-06-19</time>
+              </span>
 
           
 
@@ -268,6 +274,7 @@
 <p>最近，我一直忙于追踪分析，咱公司高并发代理服务器内存一直占用过高的问题。该问题表现如下，使用python脚本压测，服务器使用的物理内存一直飙升很快上G、虚拟内存更是高达数10G，没有下降的趋势。当压测程序停止运行后，整个服务占用的物理内存以及虚拟内存并没有下降的趋势。</p>
 <p>首先简诉咱服务器运行的平台是centos-6.3（linux-2.6.32），该服务器是多进程的，基于libevent网络通信框架，以bufferevent为核心，并使用google::protobuf通信协议进行数据传输。</p>
 <p>根据top -p /pmap -dx 等命令，检测出咱服务器进程内存占用很高，我揣测产生了内存泄露。内存泄露有两种，第一种是进程一直持有不在需要或者使用的内存，这不是狭义的内存泄露，因为没有野指针的产生，可以归为广义的内存泄露，这是危害最大的，也是很难捕捉的内存泄露，使用valgrind等工具是没有办法检测出来的；第二种是进程通过malloc、new分配了堆内存，却由于各种原因，未能释放，这是狭义的内存泄露，可以通过valgrind等内存泄露工具检测到的。</p>
+<p>&lt;!–more–&gt;</p>
 <p>首先，我采用valgrind进行内存泄露检测。的确发现了部分内存泄露，不过只有数10M，这个和top -p/pmap -dx等命令看出的内存实际使用情况不符。因此基本排除了上面提到的第二种内存泄露引起的。缺少了内存泄露检测工具的帮助，想要解决这个问题如同大海捞针。我开始怀疑第一种内存泄露造成的。如何定位呢？只能采用二分法，在程序的关键节点设置检测点，注释无关代码等手段逐一排查。</p>
 <p>咱使用了protobuf通信协议，有同事提出是不是protobuf协议的误用，造成内存堆积呢？我的确在网上找到了有关protobuf的误用造成的内存堆积的案例。原因如下，为了提升服务器的性能，避免内存碎片，protobuf消息对象使用后，就直接缓存起来，当下次使用的时候，直接从对象池中取出，并调用了clear()函数，然后再进行构造新的消息。在这个过程中，protobuf并没有因为调用了clear()函数，而释放持有的内存，其实根本没有释放任何内存，而是递归调用，恢复成员为默认值。如果一个小对象复用了之前的大对象，这个时候内存并没有紧缩，仍然持有大对象所占有的内存，这样的确会浪费大量的空间。不过，由于咱服务器对象池最多缓存1024个对象，获取对象的时候从池中弹出，完成使用后又放回池中。这个过程是动态的，因此对象池中的对象总是在变，也就是内存是弹性的，可伸缩的理论上不会成为问题。在压测过程中，使用的测试数据包不超过1M，基本可以推断，这不是问题。不过，为了证实我的推论，我采用定时清空对象池，或者压根不缓存protobuf对象两种方式，不幸的是，内存仍然上涨。</p>
 <p>兄弟，还是老实点吧！只能从数据的流动方向开始追踪问题。</p>
@@ -1061,6 +1068,26 @@
   </div>
 
         
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="Total Visitors">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="Total Views">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
 
 
 

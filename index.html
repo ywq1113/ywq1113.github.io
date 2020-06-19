@@ -844,10 +844,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">Posted on</span>
-              
 
-              <time title="Created: 2020-04-28 15:56:10 / Modified: 16:25:13" itemprop="dateCreated datePublished" datetime="2020-04-28T15:56:10+08:00">2020-04-28</time>
+              <time title="Created: 2020-04-28 15:56:10" itemprop="dateCreated datePublished" datetime="2020-04-28T15:56:10+08:00">2020-04-28</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020-06-19 22:35:12" itemprop="dateModified" datetime="2020-06-19T22:35:12+08:00">2020-06-19</time>
+              </span>
 
           
 
@@ -862,8 +868,11 @@
       
           <p>面试时无数次被问到这个知识点，但是回答的时候总是不够特别详尽以及需要面试官再次追问。所以最好一次性就能把所有这块知识点回答完才算是合格的准备。</p>
 <h1 id="TCP三次握手"><a href="#TCP三次握手" class="headerlink" title="TCP三次握手"></a>TCP三次握手</h1><h2 id="TCP三次握手过程"><a href="#TCP三次握手过程" class="headerlink" title="TCP三次握手过程"></a>TCP三次握手过程</h2><p>客户端一开始处于closed状态，开启三次握手，发送一个SYN给服务端进入SYN_SENT状态，TCP报文中seq的初始值是随着时间而变化的一个值，防止在网络中延迟的分组在以后又被传送导致某一方对它做出错误的解释；服务端接收到SYN后，进入SYN_RECV的状态，延迟一段时间后发送自己的SYN/seq和对客户端SYN的一个确认ACK/ack，报头中确认号的值是seq+1因为ack本身也占了一位，延迟确认可以降低网络流量，以及减少网络中小的报文段；客户端接收到服务端的ack后，发送对服务端SYN的确认，此后双方进入ESTABLISHED状态。</p>
-<p>为什么不能是两次握手？TCP三次握手可以进行优化嘛？TCP可以在握手期间传送数据嘛？这其实都是一个问题，就是探讨两次握手会造成什么危害。<br>个人理解的是，TCP两次握手是客户端接收到服务端的SYN和ack双方就默认建立连接。假设服务端之前返回的SYN&amp;ACK报文在网络中遗失，当再次发送给客户端，客户端误以为要建立连接，就直接维护了这个连接，但服务端端并没有数据的传输，浪费了服务器的性能。</p>
-<h2 id="SYN洪水攻击"><a href="#SYN洪水攻击" class="headerlink" title="SYN洪水攻击"></a>SYN洪水攻击</h2><p>针对三次握手，而产生的一种攻击方式。客户端和服务器使用TCP协议发起会话时，会在内存中开辟一小块缓冲区来处理会话过程中的消息交换。<br>1）大量虚假ip发送SYN：服务器返回ack找不到地址，触发重传机制<br>2）拦截客户机应答报文：两次握手后，拦截客户端对服务端的应答，服务端收不到ACK会再次发送第二次握手确认报文。</p>
+<p>为什么不能是两次握手？TCP三次握手可以进行优化嘛？TCP可以在握手期间传送数据嘛？这其实都是一个问题，就是探讨两次握手会造成什么危害。</p>
+<p>个人理解的是，TCP两次握手是客户端接收到服务端的SYN和ack双方就默认建立连接。假设客户端之前发送的SYN报文在网络中遗失，当再次发送到服务端时，服务端误以为要建立连接，就直接维护了这个连接并返回ACK，但客户端并没有数据需要传输，浪费了服务器的性能。</p>
+<h2 id="SYN洪水攻击"><a href="#SYN洪水攻击" class="headerlink" title="SYN洪水攻击"></a>SYN洪水攻击</h2><p>针对三次握手过程，而产生的一种攻击方式。客户端和服务器使用TCP协议发起会话时，会在内存中开辟一小块缓冲区来处理会话过程中的消息交换。</p>
+<p>1）大量虚假ip发送SYN：服务器返回ack找不到地址，触发重传机制</p>
+<p>2）拦截客户机应答报文：两次握手后，拦截客户端对服务端的应答，服务端收不到ACK会再次发送第二次握手确认报文。</p>
 <h1 id="TCP四次挥手"><a href="#TCP四次挥手" class="headerlink" title="TCP四次挥手"></a>TCP四次挥手</h1><p>客户端和服务端双方初始状态为ESTABLISHED，客户端发送一个FIN/seq，进入FIN_WAIT_1状态；服务端接收到FIN后，返回一个ACK/seq+1，表示知道对方要关闭连接，进入CLOSE_WAIT被动关闭状态。等服务端也没有数据需要发送后，会给对端发送一个FIN/seq，表示自己要关闭连接，进入LAST ACK状态；客户端接收到后，返回一个ACK/seq+1进入TIME_WAIT状态，时间为2MSL，避免服务端没有收到此ACK再次发送报文。</p>
 
       

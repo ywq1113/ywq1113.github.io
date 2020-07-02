@@ -20,19 +20,20 @@
     var CONFIG = {"hostname":"ywq1113.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
-  <meta name="description" content="面试时无数次被问到这个知识点，但是回答的时候总是不够特别详尽以及需要面试官再次追问。所以最好一次性就能把所有这块知识点回答完才算是合格的准备。 TCP三次握手TCP三次握手过程客户端一开始处于closed状态，开启三次握手，发送一个SYN给服务端进入SYN_SENT状态，TCP报文中seq的初始值是随着时间而变化的一个值，防止在网络中延迟的分组在以后又被传送导致某一方对它做出错误的解释；服务端接收">
+  <meta name="description" content="C++的内存模型弱vs强内存模型 编译时内存排序 运行时内存排序 理解C++的Memory Order 这些文章对于内存模型的讲解非常好，建议阅读，本文整理一下相关的知识点。 Memory Barrier的类型 LoadLoad 有效的保护了在屏障之前执行的读取和屏障之后执行的读取。 举个例子，git pull命令，如果在执行中有其他的merge conflicts(合并分支的冲突)，这时无法保证">
 <meta property="og:type" content="article">
-<meta property="og:title" content="TCP三路握手四次挥手">
-<meta property="og:url" content="http://ywq1113.github.io/2020/04/28/TCP%E4%B8%89%E8%B7%AF%E6%8F%A1%E6%89%8B%E5%9B%9B%E6%AC%A1%E6%8C%A5%E6%89%8B/index.html">
+<meta property="og:title" content="C++内存模型">
+<meta property="og:url" content="http://ywq1113.github.io/2020/07/02/Cpp%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B/index.html">
 <meta property="og:site_name" content="My Personal Blog">
-<meta property="og:description" content="面试时无数次被问到这个知识点，但是回答的时候总是不够特别详尽以及需要面试官再次追问。所以最好一次性就能把所有这块知识点回答完才算是合格的准备。 TCP三次握手TCP三次握手过程客户端一开始处于closed状态，开启三次握手，发送一个SYN给服务端进入SYN_SENT状态，TCP报文中seq的初始值是随着时间而变化的一个值，防止在网络中延迟的分组在以后又被传送导致某一方对它做出错误的解释；服务端接收">
+<meta property="og:description" content="C++的内存模型弱vs强内存模型 编译时内存排序 运行时内存排序 理解C++的Memory Order 这些文章对于内存模型的讲解非常好，建议阅读，本文整理一下相关的知识点。 Memory Barrier的类型 LoadLoad 有效的保护了在屏障之前执行的读取和屏障之后执行的读取。 举个例子，git pull命令，如果在执行中有其他的merge conflicts(合并分支的冲突)，这时无法保证">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2020-04-28T07:56:10.000Z">
-<meta property="article:modified_time" content="2020-06-19T14:35:12.000Z">
+<meta property="article:published_time" content="2020-07-02T08:22:56.000Z">
+<meta property="article:modified_time" content="2020-07-02T08:24:25.000Z">
 <meta property="article:author" content="yangwq">
+<meta property="article:tag" content="C++">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="http://ywq1113.github.io/2020/04/28/TCP%E4%B8%89%E8%B7%AF%E6%8F%A1%E6%89%8B%E5%9B%9B%E6%AC%A1%E6%8C%A5%E6%89%8B/">
+<link rel="canonical" href="http://ywq1113.github.io/2020/07/02/Cpp%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B/">
 
 
 <script id="page-configurations">
@@ -45,7 +46,7 @@
   };
 </script>
 
-  <title>TCP三路握手四次挥手 | My Personal Blog</title>
+  <title>C++内存模型 | My Personal Blog</title>
   
 
 
@@ -160,7 +161,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-cn">
-    <link itemprop="mainEntityOfPage" href="http://ywq1113.github.io/2020/04/28/TCP%E4%B8%89%E8%B7%AF%E6%8F%A1%E6%89%8B%E5%9B%9B%E6%AC%A1%E6%8C%A5%E6%89%8B/">
+    <link itemprop="mainEntityOfPage" href="http://ywq1113.github.io/2020/07/02/Cpp%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.jpg">
@@ -173,7 +174,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          TCP三路握手四次挥手
+          C++内存模型
         </h1>
 
         <div class="post-meta">
@@ -182,16 +183,10 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">Posted on</span>
+              
 
-              <time title="Created: 2020-04-28 15:56:10" itemprop="dateCreated datePublished" datetime="2020-04-28T15:56:10+08:00">2020-04-28</time>
+              <time title="Created: 2020-07-02 16:22:56 / Modified: 16:24:25" itemprop="dateCreated datePublished" datetime="2020-07-02T16:22:56+08:00">2020-07-02</time>
             </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2020-06-19 22:35:12" itemprop="dateModified" datetime="2020-06-19T22:35:12+08:00">2020-06-19</time>
-              </span>
 
           
             <span class="post-meta-item" title="Views" id="busuanzi_container_page_pv" style="display: none;">
@@ -211,14 +206,54 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>面试时无数次被问到这个知识点，但是回答的时候总是不够特别详尽以及需要面试官再次追问。所以最好一次性就能把所有这块知识点回答完才算是合格的准备。</p>
-<h1 id="TCP三次握手"><a href="#TCP三次握手" class="headerlink" title="TCP三次握手"></a>TCP三次握手</h1><h2 id="TCP三次握手过程"><a href="#TCP三次握手过程" class="headerlink" title="TCP三次握手过程"></a>TCP三次握手过程</h2><p>客户端一开始处于closed状态，开启三次握手，发送一个SYN给服务端进入SYN_SENT状态，TCP报文中seq的初始值是随着时间而变化的一个值，防止在网络中延迟的分组在以后又被传送导致某一方对它做出错误的解释；服务端接收到SYN后，进入SYN_RECV的状态，延迟一段时间后发送自己的SYN/seq和对客户端SYN的一个确认ACK/ack，报头中确认号的值是seq+1因为ack本身也占了一位，延迟确认可以降低网络流量，以及减少网络中小的报文段；客户端接收到服务端的ack后，发送对服务端SYN的确认，此后双方进入ESTABLISHED状态。</p>
-<p>为什么不能是两次握手？TCP三次握手可以进行优化嘛？TCP可以在握手期间传送数据嘛？这其实都是一个问题，就是探讨两次握手会造成什么危害。</p>
-<p>个人理解的是，TCP两次握手是客户端接收到服务端的SYN和ack双方就默认建立连接。假设客户端之前发送的SYN报文在网络中遗失，当再次发送到服务端时，服务端误以为要建立连接，就直接维护了这个连接并返回ACK，但客户端并没有数据需要传输，浪费了服务器的性能。</p>
-<h2 id="SYN洪水攻击"><a href="#SYN洪水攻击" class="headerlink" title="SYN洪水攻击"></a>SYN洪水攻击</h2><p>针对三次握手过程，而产生的一种攻击方式。客户端和服务器使用TCP协议发起会话时，会在内存中开辟一小块缓冲区来处理会话过程中的消息交换。</p>
-<p>1）大量虚假ip发送SYN：服务器返回ack找不到地址，触发重传机制</p>
-<p>2）拦截客户机应答报文：两次握手后，拦截客户端对服务端的应答，服务端收不到ACK会再次发送第二次握手确认报文。</p>
-<h1 id="TCP四次挥手"><a href="#TCP四次挥手" class="headerlink" title="TCP四次挥手"></a>TCP四次挥手</h1><p>客户端和服务端双方初始状态为ESTABLISHED，客户端发送一个FIN/seq，进入FIN_WAIT_1状态；服务端接收到FIN后，返回一个ACK/seq+1，表示知道对方要关闭连接，进入CLOSE_WAIT被动关闭状态。等服务端也没有数据需要发送后，会给对端发送一个FIN/seq，表示自己要关闭连接，进入LAST ACK状态；客户端接收到后，返回一个ACK/seq+1进入TIME_WAIT状态，时间为2MSL，避免服务端没有收到此ACK再次发送报文。</p>
+        <h1 id="C-的内存模型"><a href="#C-的内存模型" class="headerlink" title="C++的内存模型"></a>C++的内存模型</h1><p><a href="https://preshing.com/20120930/weak-vs-strong-memory-models/" target="_blank" rel="noopener">弱vs强内存模型</a></p>
+<p><a href="https://preshing.com/20120625/memory-ordering-at-compile-time/" target="_blank" rel="noopener">编译时内存排序</a></p>
+<p><a href="https://preshing.com/20120710/memory-barriers-are-like-source-control-operations/" target="_blank" rel="noopener">运行时内存排序</a></p>
+<p><a href="http://senlinzhan.github.io/2017/12/04/cpp-memory-order/" target="_blank" rel="noopener">理解C++的Memory Order</a></p>
+<p>这些文章对于内存模型的讲解非常好，建议阅读，本文整理一下相关的知识点。</p>
+<h2 id="Memory-Barrier的类型"><a href="#Memory-Barrier的类型" class="headerlink" title="Memory Barrier的类型"></a>Memory Barrier的类型</h2><ul>
+<li><p>LoadLoad</p>
+<p>有效的保护了在屏障之前执行的读取和屏障之后执行的读取。</p>
+<p>举个例子，<code>git pull</code>命令，如果在执行中有其他的merge conflicts(合并分支的冲突)，这时无法保证会提取数据库的最新版本。使用<code>LOADLOAD_FENCE()</code>可以保证不会看到过时的数据，</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>(IsPublished)</span><br><span class="line">&#123;</span><br><span class="line">  LOADLOAD_FENCE();</span><br><span class="line">  <span class="keyword">return</span> value;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>StoreStore</p>
+<p>有效的保护了在屏障之前的存储和屏障之后的存储</p>
+<p>同样地，考虑<code>git push</code>的过程，同时该过程是延迟、异步的行为。所以无法保证在执行push之后，无法保证它之前存储的数据在整个数据库中是可见的。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">value = x;</span><br><span class="line">STORESOTRE_FENCE();</span><br><span class="line">IsPublished = <span class="number">1</span>;  <span class="comment">//标记一下存储完成</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>LoadStore</p>
+<p>从内存中拷贝到cpu，再从cpu拷贝到内存，这种指令会重排。</p>
+<p>在实际的cpu中，如果load时高速缓存未命中，然后在存储上命中高速缓存，某些处理器就会发生重排，让其先存储再读取。</p>
+</li>
+<li><p>StoreLoad</p>
+<p>确保屏障执行之前的存储对所有处理器都是可见的，并且屏障执行之后的读取都是接收的可见的最新值，实现了顺序一致性（唯一一种可以防止race condition的内存屏障）。</p>
+</li>
+</ul>
+<h2 id="硬件层面内存模型"><a href="#硬件层面内存模型" class="headerlink" title="硬件层面内存模型"></a>硬件层面内存模型</h2><p>不同的处理器在内存重新排序的过程中具有不同的习惯，只能在多核/多处理器中观察到。如上方博客中所介绍，x86/64架构的计算机普遍是strong memory model。</p>
+<p>那么硬件层面的强/弱内存模型区别是什么呢？<code>A strong hardware memory model is one in which every machine instruction comes implicitly with acquire and release semantics. As a result, when one CPU core performs a sequence of writes, every other CPU core sees those values change in the same order that they were written.</code>文章中是这么描述的，意思是每条机器指令都隐式地带有获取/释放语义。因此，当一个核执行一系列写操作时，每一个cpu的核都能看到写入的值和写入的顺序。也就是说不会存在 loadload、loadstore、storestore 的重排，可以进行的是 storeload 的重排。</p>
+<p>Note: acquire语义是指load之后的读写操作无法被重排到load之前；release语义是指store之前的操作无法被重排到store之后。</p>
+<p><a href="https://preshing.com/20120515/memory-reordering-caught-in-the-act/" target="_blank" rel="noopener">https://preshing.com/20120515/memory-reordering-caught-in-the-act/</a></p>
+<p>上方链接是一个示例程序显示重排发生的原因。主要思路是在信号量<code>sem_wait()</code>之后对共享内存进行写入操作，在<code>sem_post()</code>之前对共享内存进行读取操作，这样确保acquire/release的语义，这是一种不会发生重排的做法。如果用两个信号量给两个线程发送(sem_post)，操作一番，等待两个线程(sem_wait)，再用一个for循环统计迭代多少次以后会发生重排（如果数值不符合预期就是发生了重排）。会发现60万次迭代中有90多次发生了重排。</p>
+<p>如果想消除这些重新排序，有这么几种做法：</p>
+<p>（1）提高线程关联性，让两个工作线程都在同一个cpu上运行，但是可移植性差；</p>
+<p>（2）引入cpu屏障，<code>StoreLoad Barrier</code>，在gcc中可以用`asm volatile(“mfence” ::: “memory”)，防止内存重新排序</p>
+<h2 id="软件层面内存模型"><a href="#软件层面内存模型" class="headerlink" title="软件层面内存模型"></a>软件层面内存模型</h2><p>如果在语言层面实现对多线程共享变量的控制，忽略编译器和cpu架构的不同对多线程编程的影响，这样就可以跨平台了。</p>
+<p>在C++11之后提供了六种不同的memory_order选项</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">namespace</span> <span class="built_in">std</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">typedef</span> <span class="keyword">enum</span> memory_order</span><br><span class="line">    &#123;</span><br><span class="line">        memory_order_relaxed, memory_order_consume, memory_order_acquire,</span><br><span class="line">        memory_order_release, memory_order_acq_rel, memory_order_seq_cst</span><br><span class="line">    &#125; memory_order;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>memory_order_seq_cst</p>
+<p>顺序一致性，默认的选项，不允许reorder</p>
+</li>
+<li><p>memory_order_release/acquire/acq_rel</p>
+<p>release和acquire的重排都可能造成存取过程的不同步，acq_rel是保证了线程不同时进入临界区。</p>
+</li>
+<li><p>memory_order_relaxed</p>
+<p>宽松操作，没有同步或顺序的制约，仅仅对<code>load()</code>和<code>store()</code>操作保证原子性。</p>
+</li>
+</ul>
+<p>编写测试用例时，用到全局变量，让两个线程对其读/写就可以看到race condition(x86架构下只要是原子变量不会出现竞态，硬件保证了获取/释放语义)。</p>
 
     </div>
 
@@ -234,7 +269,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>Post link: </strong>
-    <a href="http://ywq1113.github.io/2020/04/28/TCP%E4%B8%89%E8%B7%AF%E6%8F%A1%E6%89%8B%E5%9B%9B%E6%AC%A1%E6%8C%A5%E6%89%8B/" title="TCP三路握手四次挥手">http://ywq1113.github.io/2020/04/28/TCP三路握手四次挥手/</a>
+    <a href="http://ywq1113.github.io/2020/07/02/Cpp%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B/" title="C++内存模型">http://ywq1113.github.io/2020/07/02/Cpp内存模型/</a>
   </li>
   <li class="post-copyright-license">
     <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.
@@ -244,6 +279,9 @@
 
 
       <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/C/" rel="tag"># C++</a>
+          </div>
 
         
 
@@ -251,13 +289,10 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2020/04/27/%E7%BC%93%E5%AD%98%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98/" rel="prev" title="缓存常见问题">
-      <i class="fa fa-chevron-left"></i> 缓存常见问题
+    <a href="/2020/06/19/CSAPP%E4%BC%98%E5%8C%96%E7%A8%8B%E5%BA%8F%E6%80%A7%E8%83%BD/" rel="prev" title="CSAPP优化程序性能">
+      <i class="fa fa-chevron-left"></i> CSAPP优化程序性能
     </a></div>
-      <div class="post-nav-item">
-    <a href="/2020/05/08/%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F%E5%AD%A6%E4%B9%A0/" rel="next" title="单例模式学习">
-      单例模式学习 <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -316,7 +351,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#TCP三次握手"><span class="nav-number">1.</span> <span class="nav-text">TCP三次握手</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP三次握手过程"><span class="nav-number">1.1.</span> <span class="nav-text">TCP三次握手过程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SYN洪水攻击"><span class="nav-number">1.2.</span> <span class="nav-text">SYN洪水攻击</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#TCP四次挥手"><span class="nav-number">2.</span> <span class="nav-text">TCP四次挥手</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#C-的内存模型"><span class="nav-number">1.</span> <span class="nav-text">C++的内存模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Memory-Barrier的类型"><span class="nav-number">1.1.</span> <span class="nav-text">Memory Barrier的类型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#硬件层面内存模型"><span class="nav-number">1.2.</span> <span class="nav-text">硬件层面内存模型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#软件层面内存模型"><span class="nav-number">1.3.</span> <span class="nav-text">软件层面内存模型</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
